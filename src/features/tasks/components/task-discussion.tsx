@@ -7,7 +7,7 @@ import { Loader, SendHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAddTaskComment } from "../api/use-add-task-comment";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -21,6 +21,12 @@ export const TaskDiscussion = ({ taskId }: TaskDiscussionProps) => {
   const { data: comments, isLoading } = useGetTaskComments({ taskId });
   const { mutate: addComment, isPending } = useAddTaskComment();
   const [comment, setComment] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when comments change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments]);
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +85,8 @@ export const TaskDiscussion = ({ taskId }: TaskDiscussionProps) => {
                 </div>
               </div>
             ))}
+            {/* Invisible div to scroll to */}
+            <div ref={messagesEndRef} />
           </>
         )}
       </div>

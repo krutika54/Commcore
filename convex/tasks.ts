@@ -234,32 +234,33 @@ export const remove = mutation({
 });
 
 // Get task comments
+// ✅ CORRECT - Returns oldest first
 export const getComments = query({
   args: { taskId: v.id("tasks") },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
+    if (!userId) return [];
 
     const comments = await ctx.db
       .query("taskComments")
       .withIndex("by_task_id", (q) => q.eq("taskId", args.taskId))
-      .order("desc")
+      .order("asc") // ✅ Changed from "desc" to "asc"
       .collect();
 
-    const commentsWithMembers = await Promise.all(
+    return await Promise.all(
       comments.map(async (comment) => {
         const member = await ctx.db.get(comment.memberId);
         const user = member ? await ctx.db.get(member.userId) : null;
+
         return {
           ...comment,
           member: member ? { ...member, user } : null,
         };
       })
     );
-
-    return commentsWithMembers;
   },
 });
+
 
 // Add comment to task
 export const addComment = mutation({
