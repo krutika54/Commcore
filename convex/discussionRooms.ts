@@ -1,20 +1,87 @@
-import {v} from "convex/values";
-import {mutation, query, QueryCtx} from "./_generated/server";
-import {auth} from "./auth";
-import {Id} from "./_generated/dataModel";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { auth } from "./auth";
 
-// Helper to populate user data
-const populateUser = (ctx: QueryCtx, userId: Id<"users">) => {
-  return ctx.db.get(userId);
-};
+// Get all rooms in workspace
+export const getByWorkspace = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
 
-// Create discussion room
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+      )
+      .unique();
+
+    if (!member) return null;
+
+    const rooms = await ctx.db
+      .query("discussionRooms")
+      .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+
+    const roomsWithDetails = await Promise.all(
+      rooms.map(async (room) => {
+        const creator = await ctx.db.get(room.createdBy);
+        const creatorUser = creator ? await ctx.db.get(creator.userId) : null;
+
+        const members = await ctx.db
+          .query("roomMembers")
+          .withIndex("by_room_id", (q) => q.eq("roomId", room._id))
+          .collect();
+
+        const userMembership = await ctx.db
+          .query("roomMembers")
+          .withIndex("by_room_id_member_id", (q) =>
+            q.eq("roomId", room._id).eq("memberId", member._id)
+          )
+          .unique();
+
+        return {
+          ...room,
+          creator: creator ? { ...creator, user: creatorUser } : null,
+          memberCount: members.length,
+          isMember: !!userMembership,
+        };
+      })
+    );
+
+    return roomsWithDetails;
+  },
+});
+
+// Get room by ID
+export const getById = query({
+  args: { roomId: v.id("discussionRooms") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
+    const room = await ctx.db.get(args.roomId);
+    if (!room) return null;
+
+    const memberCount = await ctx.db
+      .query("roomMembers")
+      .withIndex("by_room_id", (q) => q.eq("roomId", args.roomId))
+      .collect();
+
+    return {
+      ...room,
+      memberCount: memberCount.length,
+    };
+  },
+});
+
+// Create room
 export const create = mutation({
   args: {
     name: v.string(),
-    description: v.string(),
-    workspaceId: v.id("workspaces"),
     topic: v.string(),
+    description: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
     isPrivate: v.boolean(),
     maxMembers: v.optional(v.number()),
   },
@@ -29,83 +96,27 @@ export const create = mutation({
       )
       .unique();
 
-    if (!member) throw new Error("Member not found");
+    if (!member) throw new Error("Unauthorized");
 
     const roomId = await ctx.db.insert("discussionRooms", {
       name: args.name,
+      topic: args.topic,
       description: args.description,
       workspaceId: args.workspaceId,
-      topic: args.topic,
       createdBy: member._id,
       isPrivate: args.isPrivate,
       maxMembers: args.maxMembers,
       createdAt: Date.now(),
     });
 
-    // Auto-add creator as moderator
+    // Auto-join creator
     await ctx.db.insert("roomMembers", {
       roomId,
       memberId: member._id,
-      role: "admin",
-      isMuted: false,
       joinedAt: Date.now(),
     });
 
     return roomId;
-  },
-});
-
-// Get rooms by workspace
-export const getByWorkspace = query({
-  args: {
-    workspaceId: v.id("workspaces"),
-    topic: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
-
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-      )
-      .unique();
-
-    if (!member) return [];
-
-    let roomsQuery = ctx.db
-      .query("discussionRooms")
-      .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId));
-
-    const rooms = await roomsQuery.collect();
-
-    const filteredRooms = args.topic
-      ? rooms.filter((room) => room.topic === args.topic)
-      : rooms;
-
-    // Get room member count and user membership status
-    const roomsWithDetails = await Promise.all(
-      filteredRooms.map(async (room) => {
-        const roomMembers = await ctx.db
-          .query("roomMembers")
-          .withIndex("by_room_id", (q) => q.eq("roomId", room._id))
-          .collect();
-
-        const userMembership = roomMembers.find((rm) => rm.memberId === member._id);
-
-        return {
-          ...room,
-          memberCount: roomMembers.length,
-          isMember: !!userMembership,
-          isMuted: userMembership?.isMuted || false,
-          userRole: userMembership?.role,
-        };
-      })
-    );
-
-    // Filter private rooms if user is not a member
-    return roomsWithDetails.filter((room) => !room.isPrivate || room.isMember);
   },
 });
 
@@ -126,7 +137,7 @@ export const join = mutation({
       )
       .unique();
 
-    if (!member) throw new Error("Member not found");
+    if (!member) throw new Error("Unauthorized");
 
     // Check if already a member
     const existing = await ctx.db
@@ -136,9 +147,9 @@ export const join = mutation({
       )
       .unique();
 
-    if (existing) throw new Error("Already a member");
+    if (existing) return existing._id;
 
-    // Check max members limit
+    // Check max members
     if (room.maxMembers) {
       const currentMembers = await ctx.db
         .query("roomMembers")
@@ -150,94 +161,53 @@ export const join = mutation({
       }
     }
 
-    await ctx.db.insert("roomMembers", {
+    const membershipId = await ctx.db.insert("roomMembers", {
       roomId: args.roomId,
       memberId: member._id,
-   role: "member",
-
-      isMuted: false,
       joinedAt: Date.now(),
     });
 
-    return args.roomId;
+    return membershipId;
   },
 });
 
-// Leave room
-export const leave = mutation({
+// Get room messages
+export const getMessages = query({
   args: { roomId: v.id("discussionRooms") },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Unauthorized");
+    if (!userId) return null;
 
     const room = await ctx.db.get(args.roomId);
-    if (!room) throw new Error("Room not found");
+    if (!room) return null;
 
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", room.workspaceId).eq("userId", userId)
-      )
-      .unique();
+    const messages = await ctx.db
+      .query("roomMessages")
+      .withIndex("by_room_id", (q) => q.eq("roomId", args.roomId))
+      .order("desc")
+      .take(100);
 
-    if (!member) throw new Error("Member not found");
+    const messagesWithMembers = await Promise.all(
+      messages.map(async (message) => {
+        const member = await ctx.db.get(message.memberId);
+        const user = member ? await ctx.db.get(member.userId) : null;
 
-    const roomMember = await ctx.db
-      .query("roomMembers")
-      .withIndex("by_room_id_member_id", (q) =>
-        q.eq("roomId", args.roomId).eq("memberId", member._id)
-      )
-      .unique();
+        return {
+          ...message,
+          member: member ? { ...member, user } : null,
+        };
+      })
+    );
 
-    if (!roomMember) throw new Error("Not a member of this room");
-
-    await ctx.db.delete(roomMember._id);
-    return args.roomId;
+    return messagesWithMembers.reverse();
   },
 });
 
-// Toggle mute
-export const toggleMute = mutation({
-  args: { roomId: v.id("discussionRooms") },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) throw new Error("Unauthorized");
-
-    const room = await ctx.db.get(args.roomId);
-    if (!room) throw new Error("Room not found");
-
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", room.workspaceId).eq("userId", userId)
-      )
-      .unique();
-
-    if (!member) throw new Error("Member not found");
-
-    const roomMember = await ctx.db
-      .query("roomMembers")
-      .withIndex("by_room_id_member_id", (q) =>
-        q.eq("roomId", args.roomId).eq("memberId", member._id)
-      )
-      .unique();
-
-    if (!roomMember) throw new Error("Not a member of this room");
-
-    await ctx.db.patch(roomMember._id, {
-      isMuted: !roomMember.isMuted,
-    });
-
-    return args.roomId;
-  },
-});
-
-// Send message in room
+// Send message
 export const sendMessage = mutation({
   args: {
-    body: v.string(),
     roomId: v.id("discussionRooms"),
-    parentMessageId: v.optional(v.id("roomMessages")),
+    body: v.string(),
     image: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
@@ -254,94 +224,27 @@ export const sendMessage = mutation({
       )
       .unique();
 
-    if (!member) throw new Error("Member not found");
+    if (!member) throw new Error("Unauthorized");
 
-    // Check if user is a member of the room
-    const roomMember = await ctx.db
+    // Check if member of room
+    const membership = await ctx.db
       .query("roomMembers")
       .withIndex("by_room_id_member_id", (q) =>
         q.eq("roomId", args.roomId).eq("memberId", member._id)
       )
       .unique();
 
-    if (!roomMember) throw new Error("Not a member of this room");
+    if (!membership) throw new Error("Not a member of this room");
 
     const messageId = await ctx.db.insert("roomMessages", {
-      body: args.body,
       roomId: args.roomId,
       memberId: member._id,
-      parentMessageId: args.parentMessageId,
+      body: args.body,
       image: args.image,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     });
 
     return messageId;
-  },
-});
-
-// Get room messages
-export const getMessages = query({
-  args: {
-    roomId: v.id("discussionRooms"),
-    parentMessageId: v.optional(v.id("roomMessages")),
-  },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
-
-    const room = await ctx.db.get(args.roomId);
-    if (!room) return [];
-
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", room.workspaceId).eq("userId", userId)
-      )
-      .unique();
-
-    if (!member) return [];
-
-    // Check if user is a member of the room
-    const roomMember = await ctx.db
-      .query("roomMembers")
-      .withIndex("by_room_id_member_id", (q) =>
-        q.eq("roomId", args.roomId).eq("memberId", member._id)
-      )
-      .unique();
-
-    if (!roomMember) return [];
-
-    const messages = await ctx.db
-      .query("roomMessages")
-      .withIndex("by_room_id_parent_message_id", (q) =>
-        q.eq("roomId", args.roomId).eq("parentMessageId", args.parentMessageId)
-      )
-      .collect();
-
-    const messagesWithMembers = await Promise.all(
-      messages.map(async (message) => {
-        const messageMember = await ctx.db.get(message.memberId);
-        const user = messageMember ? await ctx.db.get(messageMember.userId) : null;
-        const imageUrl = message.image ? await ctx.storage.getUrl(message.image) : null;
-
-        // Get reply count for threading
-        const replies = await ctx.db
-          .query("roomMessages")
-          .withIndex("by_parent_message_id", (q) =>
-            q.eq("parentMessageId", message._id)
-          )
-          .collect();
-
-        return {
-          ...message,
-          imageUrl,
-          member: messageMember ? { ...messageMember, user } : null,
-          replyCount: replies.length,
-        };
-      })
-    );
-
-    return messagesWithMembers.sort((a, b) => a.createdAt - b.createdAt);
   },
 });
 
@@ -362,49 +265,12 @@ export const remove = mutation({
       )
       .unique();
 
-    if (!member || member.role !== "admin") throw new Error("Unauthorized");
-
-    // Delete all room members
-    const roomMembers = await ctx.db
-      .query("roomMembers")
-      .withIndex("by_room_id", (q) => q.eq("roomId", args.roomId))
-      .collect();
-
-    for (const rm of roomMembers) {
-      await ctx.db.delete(rm._id);
-    }
-
-    // Delete all messages
-    const messages = await ctx.db
-      .query("roomMessages")
-      .withIndex("by_room_id", (q) => q.eq("roomId", args.roomId))
-      .collect();
-
-    for (const msg of messages) {
-      await ctx.db.delete(msg._id);
+    if (!member || room.createdBy !== member._id) {
+      throw new Error("Unauthorized");
     }
 
     await ctx.db.delete(args.roomId);
+
     return args.roomId;
-  },
-});
-export const getById = query({
-  args: { roomId: v.id("discussionRooms") },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return null;
-
-    const room = await ctx.db.get(args.roomId);
-    if (!room) return null;
-
-    const memberCount = await ctx.db
-      .query("roomMembers")
-      .withIndex("by_room_id", (q) => q.eq("roomId", args.roomId))
-      .collect();
-
-    return {
-      ...room,
-      memberCount: memberCount.length,
-    };
   },
 });

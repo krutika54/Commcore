@@ -1,8 +1,123 @@
-import {v} from "convex/values";
-import {mutation, query} from "./_generated/server";
-import {auth} from "./auth";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { auth } from "./auth";
 
-// Create a new task
+// Get workspace members for assignment dropdown
+export const getWorkspaceMembers = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    const members = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId))
+      .collect();
+
+    const membersWithUsers = await Promise.all(
+      members.map(async (member) => {
+        const user = await ctx.db.get(member.userId);
+        return {
+          ...member,
+          user,
+        };
+      })
+    );
+
+    return membersWithUsers;
+  },
+});
+
+// Get active tasks (not archived)
+export const getActiveTasks = query({
+  args: { 
+    workspaceId: v.id("workspaces"),
+    channelId: v.optional(v.id("channels")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+      )
+      .unique();
+
+    if (!member) return null;
+
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_workspace_id_is_archived", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("isArchived", false)
+      )
+      .collect();
+
+    const tasksWithData = await Promise.all(
+      tasks.map(async (task) => {
+        const creator = await ctx.db.get(task.createdBy);
+        const creatorUser = creator ? await ctx.db.get(creator.userId) : null;
+        
+        const assignee = task.assignedTo ? await ctx.db.get(task.assignedTo) : null;
+        const assigneeUser = assignee ? await ctx.db.get(assignee.userId) : null;
+
+        return {
+          ...task,
+          creator: creator ? { ...creator, user: creatorUser } : null,
+          assignee: assignee ? { ...assignee, user: assigneeUser } : null,
+        };
+      })
+    );
+
+    return tasksWithData;
+  },
+});
+
+// Get task history (archived completed tasks)
+export const getTaskHistory = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("userId", userId)
+      )
+      .unique();
+
+    if (!member) return null;
+
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_workspace_id_is_archived", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("isArchived", true)
+      )
+      .collect();
+
+    const tasksWithData = await Promise.all(
+      tasks.map(async (task) => {
+        const creator = await ctx.db.get(task.createdBy);
+        const creatorUser = creator ? await ctx.db.get(creator.userId) : null;
+        
+        const assignee = task.assignedTo ? await ctx.db.get(task.assignedTo) : null;
+        const assigneeUser = assignee ? await ctx.db.get(assignee.userId) : null;
+
+        return {
+          ...task,
+          creator: creator ? { ...creator, user: creatorUser } : null,
+          assignee: assignee ? { ...assignee, user: assigneeUser } : null,
+        };
+      })
+    );
+
+    return tasksWithData;
+  },
+});
+
+// Create task with assignee
 export const create = mutation({
   args: {
     title: v.string(),
@@ -24,7 +139,7 @@ export const create = mutation({
       )
       .unique();
 
-    if (!member) throw new Error("Member not found");
+    if (!member) throw new Error("Unauthorized");
 
     const taskId = await ctx.db.insert("tasks", {
       title: args.title,
@@ -36,67 +151,12 @@ export const create = mutation({
       status: "not_started",
       priority: args.priority,
       dueDate: args.dueDate,
+      isArchived: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
 
     return taskId;
-  },
-});
-
-// Get all tasks for a workspace
-export const getByWorkspace = query({
-  args: {
-    workspaceId: v.id("workspaces"),
-    status: v.optional(v.union(
-      v.literal("not_started"),
-      v.literal("in_progress"),
-      v.literal("completed"),
-      v.literal("delayed")
-    )),
-  },
-  handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
-
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-      )
-      .unique();
-
-    if (!member) return [];
-
-    let tasksQuery = ctx.db
-      .query("tasks")
-      .withIndex("by_workspace_id", (q) => q.eq("workspaceId", args.workspaceId));
-
-    const tasks = await tasksQuery.collect();
-
-    // Filter by status if provided
-    const filteredTasks = args.status
-      ? tasks.filter((task) => task.status === args.status)
-      : tasks;
-
-    // Populate creator and assignee info
-    const tasksWithMembers = await Promise.all(
-      filteredTasks.map(async (task) => {
-        const creator = await ctx.db.get(task.createdBy);
-        const assignee = task.assignedTo ? await ctx.db.get(task.assignedTo) : null;
-        
-        const creatorUser = creator ? await ctx.db.get(creator.userId) : null;
-        const assigneeUser = assignee ? await ctx.db.get(assignee.userId) : null;
-
-        return {
-          ...task,
-          creator: creator ? { ...creator, user: creatorUser } : null,
-          assignee: assignee ? { ...assignee, user: assigneeUser } : null,
-        };
-      })
-    );
-
-    return tasksWithMembers;
   },
 });
 
@@ -118,34 +178,28 @@ export const updateStatus = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", task.workspaceId).eq("userId", userId)
-      )
-      .unique();
-
-    if (!member) throw new Error("Unauthorized");
-
-    await ctx.db.patch(args.taskId, {
+    // If completed, archive it
+    const updates: any = {
       status: args.status,
-      completedAt: args.status === "completed" ? Date.now() : undefined,
       updatedAt: Date.now(),
-    });
+    };
+
+    if (args.status === "completed") {
+      updates.completedAt = Date.now();
+      updates.isArchived = true;
+    }
+
+    await ctx.db.patch(args.taskId, updates);
 
     return args.taskId;
   },
 });
 
-// Update task details
-export const update = mutation({
+// Update task assignee
+export const updateAssignee = mutation({
   args: {
     taskId: v.id("tasks"),
-    title: v.optional(v.string()),
-    description: v.optional(v.string()),
     assignedTo: v.optional(v.id("members")),
-    priority: v.optional(v.union(v.literal("low"), v.literal("medium"), v.literal("high"))),
-    dueDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
@@ -154,28 +208,16 @@ export const update = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", task.workspaceId).eq("userId", userId)
-      )
-      .unique();
+    await ctx.db.patch(args.taskId, {
+      assignedTo: args.assignedTo,
+      updatedAt: Date.now(),
+    });
 
-    if (!member) throw new Error("Unauthorized");
-
-    const updates: any = { updatedAt: Date.now() };
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.assignedTo !== undefined) updates.assignedTo = args.assignedTo;
-    if (args.priority !== undefined) updates.priority = args.priority;
-    if (args.dueDate !== undefined) updates.dueDate = args.dueDate;
-
-    await ctx.db.patch(args.taskId, updates);
     return args.taskId;
   },
 });
 
-// Delete a task
+// Delete task
 export const remove = mutation({
   args: { taskId: v.id("tasks") },
   handler: async (ctx, args) => {
@@ -185,27 +227,37 @@ export const remove = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error("Task not found");
 
-    const member = await ctx.db
-      .query("members")
-      .withIndex("by_workspace_id_user_id", (q) =>
-        q.eq("workspaceId", task.workspaceId).eq("userId", userId)
-      )
-      .unique();
+    await ctx.db.delete(args.taskId);
 
-    if (!member || member.role !== "admin") throw new Error("Unauthorized");
+    return args.taskId;
+  },
+});
 
-    // Delete task comments
+// Get task comments
+export const getComments = query({
+  args: { taskId: v.id("tasks") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+
     const comments = await ctx.db
       .query("taskComments")
       .withIndex("by_task_id", (q) => q.eq("taskId", args.taskId))
+      .order("desc")
       .collect();
 
-    for (const comment of comments) {
-      await ctx.db.delete(comment._id);
-    }
+    const commentsWithMembers = await Promise.all(
+      comments.map(async (comment) => {
+        const member = await ctx.db.get(comment.memberId);
+        const user = member ? await ctx.db.get(member.userId) : null;
+        return {
+          ...comment,
+          member: member ? { ...member, user } : null,
+        };
+      })
+    );
 
-    await ctx.db.delete(args.taskId);
-    return args.taskId;
+    return commentsWithMembers;
   },
 });
 
@@ -241,27 +293,105 @@ export const addComment = mutation({
     return commentId;
   },
 });
-
-// Get comments for a task
-export const getComments = query({
+// Get task by ID
+export const getById = query({
   args: { taskId: v.id("tasks") },
   handler: async (ctx, args) => {
-    const comments = await ctx.db
-      .query("taskComments")
-      .withIndex("by_task_id", (q) => q.eq("taskId", args.taskId))
-      .collect();
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
 
-    const commentsWithMembers = await Promise.all(
-      comments.map(async (comment) => {
-        const member = await ctx.db.get(comment.memberId);
-        const user = member ? await ctx.db.get(member.userId) : null;
-        return {
-          ...comment,
-          member: member ? { ...member, user } : null,
-        };
-      })
-    );
+    const task = await ctx.db.get(args.taskId);
+    if (!task) return null;
 
-    return commentsWithMembers;
+    const creator = await ctx.db.get(task.createdBy);
+    const creatorUser = creator ? await ctx.db.get(creator.userId) : null;
+    
+    const assignee = task.assignedTo ? await ctx.db.get(task.assignedTo) : null;
+    const assigneeUser = assignee ? await ctx.db.get(assignee.userId) : null;
+
+    return {
+      ...task,
+      creator: creator ? { ...creator, user: creatorUser } : null,
+      assignee: assignee ? { ...assignee, user: assigneeUser } : null,
+    };
   },
 });
+// Get task attachments
+export const getAttachments = query({
+  args: { taskId: v.id("tasks") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    const attachments = await ctx.db
+      .query("taskAttachments")
+      .withIndex("by_task_id", (q) => q.eq("taskId", args.taskId))
+      .order("desc")
+      .collect();
+
+    return await Promise.all(
+      attachments.map(async (attachment) => ({
+        ...attachment,
+        url: await ctx.storage.getUrl(attachment.fileId),
+      }))
+    );
+  },
+});
+
+
+// Add attachment
+export const addAttachment = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    name: v.string(),
+    fileId: v.id("_storage"),
+    fileType: v.string(),
+    fileSize: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error("Task not found");
+
+    const member = await ctx.db
+      .query("members")
+      .withIndex("by_workspace_id_user_id", (q) =>
+        q.eq("workspaceId", task.workspaceId).eq("userId", userId)
+      )
+      .unique();
+
+    if (!member) throw new Error("Unauthorized");
+
+    const attachmentId = await ctx.db.insert("taskAttachments", {
+      taskId: args.taskId,
+      memberId: member._id,
+      name: args.name,
+      fileId: args.fileId,
+      fileType: args.fileType,
+      fileSize: args.fileSize,
+      createdAt: Date.now(),
+    });
+
+    return attachmentId;
+  },
+});
+
+// Remove attachment
+export const removeAttachment = mutation({
+  args: { attachmentId: v.id("taskAttachments") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Unauthorized");
+
+    const attachment = await ctx.db.get(args.attachmentId);
+    if (!attachment) throw new Error("Attachment not found");
+
+    await ctx.db.delete(args.attachmentId);
+    await ctx.storage.delete(attachment.fileId);
+
+    return args.attachmentId;
+  },
+});
+

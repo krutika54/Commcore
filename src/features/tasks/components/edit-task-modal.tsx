@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,33 +18,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateTask } from "../api/use-create-task";
+import { useUpdateTask } from "../api/use-update-task";
 import { useGetWorkspaceMembers } from "../api/use-get-workspace-members";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { useCreateTaskModal } from "../store/use-create-task-modal";
 import { toast } from "sonner";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { format } from "date-fns";
 
-export const CreateTaskModal = () => {
+interface EditTaskModalProps {
+  task: any;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) => {
   const workspaceId = useWorkspaceId();
-  const [open, setOpen] = useCreateTaskModal();
-  const { mutate, isPending } = useCreateTask();
+  const { mutate, isPending } = useUpdateTask();
   const { data: members } = useGetWorkspaceMembers({ workspaceId });
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
-  const [assignedTo, setAssignedTo] = useState<string>("");
-  const [dueDate, setDueDate] = useState("");
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || "");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">(task.priority);
+  const [assignedTo, setAssignedTo] = useState<string>(task.assignedTo?._id || "");
+  const [dueDate, setDueDate] = useState(
+    task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
+  );
 
-  const handleClose = () => {
-    setOpen(false);
-    setTitle("");
-    setDescription("");
-    setPriority("medium");
-    setAssignedTo("");
-    setDueDate("");
-  };
+  useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description || "");
+    setPriority(task.priority);
+    setAssignedTo(task.assignedTo?._id || "");
+    setDueDate(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
+  }, [task]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,30 +62,30 @@ export const CreateTaskModal = () => {
 
     mutate(
       {
+        taskId: task._id,
         title: title.trim(),
         description: description.trim() || undefined,
-        workspaceId,
         assignedTo: assignedTo ? (assignedTo as Id<"members">) : undefined,
         priority,
         dueDate: dueDate ? new Date(dueDate).getTime() : undefined,
       },
       {
         onSuccess: () => {
-          toast.success("Task created successfully");
-          handleClose();
+          toast.success("Task updated successfully");
+          onOpenChange(false);
         },
         onError: () => {
-          toast.error("Failed to create task");
+          toast.error("Failed to update task");
         },
       }
     );
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -164,13 +170,13 @@ export const CreateTaskModal = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={handleClose}
+              onClick={() => onOpenChange(false)}
               disabled={isPending}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Creating..." : "Create Task"}
+              {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

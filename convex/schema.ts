@@ -64,16 +64,14 @@ const schema = defineSchema({
     .index("by_message_id", ["messageId"])
     .index("by_member_id", ["memberId"]),
 
-  // ==========================================
-  // FEATURE 1: TASK MANAGEMENT
-  // ==========================================
+  // IMPROVED TASKS
   tasks: defineTable({
     title: v.string(),
     description: v.optional(v.string()),
     workspaceId: v.id("workspaces"),
     channelId: v.optional(v.id("channels")),
     createdBy: v.id("members"),
-    assignedTo: v.optional(v.id("members")),
+    assignedTo: v.optional(v.id("members")), // NEW
     status: v.union(
       v.literal("not_started"),
       v.literal("in_progress"),
@@ -87,6 +85,7 @@ const schema = defineSchema({
     ),
     dueDate: v.optional(v.number()),
     completedAt: v.optional(v.number()),
+    isArchived: v.boolean(), // NEW
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -94,67 +93,33 @@ const schema = defineSchema({
     .index("by_channel_id", ["channelId"])
     .index("by_assigned_to", ["assignedTo"])
     .index("by_created_by", ["createdBy"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_workspace_id_is_archived", ["workspaceId", "isArchived"]),
 
+  // NEW: Task comments
   taskComments: defineTable({
     taskId: v.id("tasks"),
     memberId: v.id("members"),
     body: v.string(),
     createdAt: v.number(),
   })
-    .index("by_task_id", ["taskId"]),
+    .index("by_task_id", ["taskId"])
+    .index("by_member_id", ["memberId"]),
 
-  // ==========================================
-  // FEATURE 2: KNOWLEDGE HUB
-  // ==========================================
-  notes: defineTable({
-    title: v.string(),
-    content: v.string(),
-    workspaceId: v.id("workspaces"),
-    channelId: v.optional(v.id("channels")),
-    createdBy: v.id("members"),
-    isPinned: v.boolean(),
-    tags: v.array(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_workspace_id", ["workspaceId"])
-    .index("by_channel_id", ["channelId"])
-    .index("by_created_by", ["createdBy"]),
-
-  faqs: defineTable({
-    question: v.string(),
-    answer: v.string(),
-    workspaceId: v.id("workspaces"),
-    channelId: v.optional(v.id("channels")),
-    createdBy: v.id("members"),
-    isPinned: v.boolean(),
-    upvotes: v.number(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_workspace_id", ["workspaceId"])
-    .index("by_channel_id", ["channelId"]),
-
-  documents: defineTable({
+  // NEW: Task attachments
+  taskAttachments: defineTable({
+    taskId: v.id("tasks"),
+    memberId: v.id("members"),
     name: v.string(),
     fileId: v.id("_storage"),
     fileType: v.string(),
     fileSize: v.number(),
-    workspaceId: v.id("workspaces"),
-    channelId: v.optional(v.id("channels")),
-    uploadedBy: v.id("members"),
-    description: v.optional(v.string()),
-    tags: v.array(v.string()),
     createdAt: v.number(),
   })
-    .index("by_workspace_id", ["workspaceId"])
-    .index("by_channel_id", ["channelId"])
-    .index("by_uploaded_by", ["uploadedBy"]),
+    .index("by_task_id", ["taskId"])
+    .index("by_member_id", ["memberId"]),
 
-  // ==========================================
-  // FEATURE 3: DISCUSSION ROOMS
-  // ==========================================
+  // Keep existing Discussion Rooms
   discussionRooms: defineTable({
     name: v.string(),
     topic: v.string(),
@@ -168,29 +133,73 @@ const schema = defineSchema({
     .index("by_workspace_id", ["workspaceId"])
     .index("by_created_by", ["createdBy"]),
 
-  roomMembers: defineTable({
-    roomId: v.id("discussionRooms"),
-    memberId: v.id("members"),
-    role: v.union(v.literal("admin"), v.literal("member")),
-    isMuted: v.boolean(),
-    joinedAt: v.number(),
-  })
-    .index("by_room_id", ["roomId"])
-    .index("by_member_id", ["memberId"])
-    .index("by_room_id_member_id", ["roomId", "memberId"]),
+ roomMembers: defineTable({
+  roomId: v.id("discussionRooms"),
+  memberId: v.id("members"),
+  joinedAt: v.number(),
+  role: v.optional(v.string()), // ADD THIS
+  isMuted: v.optional(v.boolean()), // ADD THIS
+})
+  .index("by_room_id", ["roomId"])
+  .index("by_member_id", ["memberId"])
+  .index("by_room_id_member_id", ["roomId", "memberId"]),
 
   roomMessages: defineTable({
     roomId: v.id("discussionRooms"),
     memberId: v.id("members"),
     body: v.string(),
     image: v.optional(v.id("_storage")),
-    parentMessageId: v.optional(v.id("roomMessages")),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_room_id", ["roomId"])
-    .index("by_member_id", ["memberId"])
-    .index("by_parent_message_id", ["parentMessageId"])
-    .index("by_room_id_parent_message_id", ["roomId", "parentMessageId"]),
+    .index("by_member_id", ["memberId"]),
+
+  // Keep existing Knowledge Hub
+  notes: defineTable({
+    title: v.string(),
+    content: v.string(),
+    workspaceId: v.id("workspaces"),
+    channelId: v.optional(v.id("channels")),
+    createdBy: v.id("members"),
+    tags: v.optional(v.array(v.string())),
+    isPinned: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_workspace_id", ["workspaceId"])
+    .index("by_channel_id", ["channelId"])
+    .index("by_created_by", ["createdBy"]),
+
+  faqs: defineTable({
+    question: v.string(),
+    answer: v.string(),
+    workspaceId: v.id("workspaces"),
+    channelId: v.optional(v.id("channels")),
+    createdBy: v.id("members"),
+    upvotes: v.number(),
+    isPinned: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_id", ["workspaceId"])
+    .index("by_channel_id", ["channelId"])
+    .index("by_created_by", ["createdBy"]),
+
+  documents: defineTable({
+    name: v.string(),
+    fileId: v.id("_storage"),
+    fileType: v.string(),
+    fileSize: v.number(),
+    description: v.optional(v.string()),
+    workspaceId: v.id("workspaces"),
+    channelId: v.optional(v.id("channels")),
+    uploadedBy: v.id("members"),
+    tags: v.array(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_workspace_id", ["workspaceId"])
+    .index("by_channel_id", ["channelId"])
+    .index("by_uploaded_by", ["uploadedBy"]),
 });
 
 export default schema;

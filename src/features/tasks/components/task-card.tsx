@@ -3,7 +3,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, User, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useUpdateTaskStatus } from "../api/use-update-task-status";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface TaskCardProps {
   task: any;
@@ -34,6 +37,8 @@ const STATUS_OPTIONS = [
 ];
 
 export const TaskCard = ({ task }: TaskCardProps) => {
+  const router = useRouter();
+  const workspaceId = useWorkspaceId();
   const { mutate: updateStatus, isPending } = useUpdateTaskStatus();
 
   const handleStatusChange = (newStatus: string) => {
@@ -44,7 +49,11 @@ export const TaskCard = ({ task }: TaskCardProps) => {
       },
       {
         onSuccess: () => {
-          toast.success("Task status updated");
+          toast.success(
+            newStatus === "completed"
+              ? "Task completed and moved to history"
+              : "Task status updated"
+          );
         },
         onError: () => {
           toast.error("Failed to update task");
@@ -53,8 +62,12 @@ export const TaskCard = ({ task }: TaskCardProps) => {
     );
   };
 
+  const handleOpenTask = () => {
+    router.push(`/workspace/${workspaceId}/tasks/${task._id}`);
+  };
+
   return (
-    <Card className="cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5">
+    <Card className="hover:shadow-md transition-all">
       <CardHeader className="p-3 pb-2">
         <div className="flex items-start justify-between gap-2">
           <h4 className="font-medium text-sm line-clamp-2 flex-1">
@@ -100,7 +113,8 @@ export const TaskCard = ({ task }: TaskCardProps) => {
           </div>
         )}
 
-        {task.assignee && (
+        {/* ASSIGNEE DISPLAY */}
+        {task.assignee ? (
           <div className="flex items-center gap-2 pt-2 border-t">
             <Avatar className="size-5">
               <AvatarImage src={task.assignee.user?.image} />
@@ -109,10 +123,26 @@ export const TaskCard = ({ task }: TaskCardProps) => {
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-muted-foreground truncate">
-              {task.assignee.user?.name}
+              {task.assignee.user?.name || "Unassigned"}
             </span>
           </div>
+        ) : (
+          <div className="flex items-center gap-2 pt-2 border-t text-muted-foreground">
+            <User className="size-4" />
+            <span className="text-xs">Unassigned</span>
+          </div>
         )}
+
+        {/* OPEN TASK BUTTON */}
+        <Button
+          onClick={handleOpenTask}
+          variant="outline"
+          size="sm"
+          className="w-full mt-2"
+        >
+          <MessageSquare className="size-4 mr-2" />
+          Open Task Room
+        </Button>
       </CardContent>
     </Card>
   );
