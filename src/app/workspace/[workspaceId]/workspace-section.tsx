@@ -1,3 +1,4 @@
+"use client";
 import { Hint } from "@/components/hint";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -44,7 +45,7 @@ export const WorkspaceSection =({
                         <Button
                         onClick={onNew}
                         variant="transparent"
-                        size="iconSm"
+                        size="icon-Sm"
                         className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto p-0.5 text-sm text-[#f9edffcc] size-6 shrink-0">
                             <PlusIcon className="size-5"/>
                         </Button>

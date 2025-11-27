@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import  dynamic from "next/dynamic";
 import Quill from "quill";
-import { AlertTriangle, Loader, XIcon } from "lucide-react";
+import { AlertTriangle, Loader, XIcon, MessageSquare } from "lucide-react";
 
 
 import { useCreateMessage } from "@/features/messages/api/use-create-messages";
@@ -49,7 +49,7 @@ const formatDateLabel  = (dateSrt: string)=>{
     if(isToday(date)) return "Today";
     if(isYesterday(date)) return "Yesterday";
 
-    return format(date, "EEEE , MMMM d" );
+    return format(date, "EEEE, MMMM d" );
 };
 
 
@@ -146,16 +146,19 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
 
     if(loadingMessage || status === "LoadingFirstPage"){
         return(
-             <div className="h-full flex flex-col">
-                <div className="h-[49px] flex justify-between items-center px-4 border-b">
-                    <p className="text-lg font-bold">Thread</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]"/>
+             <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                <div className="h-[49px] flex justify-between items-center px-4 border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                        <MessageSquare className="size-5 text-purple-500" />
+                        <p className="text-lg font-bold text-white">Thread</p>
+                    </div>
+                    <Button onClick={onClose} size="icon-Sm" variant="ghost" className="hover:bg-gray-700">
+                        <XIcon className="size-5 stroke-[1.5] text-gray-400"/>
                     </Button>
                 </div>
-                <div className="flex flex-col gay-y-2 h-full items-center justify-center">
-                    <Loader className="size-5 animate-spin text-muted-foreground" />
-                     <p className="text-sm text-muted-foreground">Message not found</p>
+                <div className="flex flex-col gap-y-2 h-full items-center justify-center">
+                    <Loader className="size-8 animate-spin text-purple-500" />
+                    <p className="text-sm text-gray-400 mt-2">Loading thread...</p>
                 </div>
             </div>
         );
@@ -163,16 +166,21 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
 
     if(!message){
         return(
-            <div className="h-full flex flex-col">
-                <div className="h-[49px] flex justify-between items-center px-4 border-b">
-                    <p className="text-lg font-bold">Thread</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]"/>
+            <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+                <div className="h-[49px] flex justify-between items-center px-4 border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                        <MessageSquare className="size-5 text-purple-500" />
+                        <p className="text-lg font-bold text-white">Thread</p>
+                    </div>
+                    <Button onClick={onClose} size="icon-Sm" variant="ghost" className="hover:bg-gray-700">
+                        <XIcon className="size-5 stroke-[1.5] text-gray-400"/>
                     </Button>
                 </div>
-                <div className="flex flex-col gay-y-2 h-full items-center justify-center">
-                    <AlertTriangle className="size-5 text-muted-foreground" />
-                     <p className="text-sm text-muted-foreground">Message not found</p>
+                <div className="flex flex-col gap-y-2 h-full items-center justify-center">
+                    <div className="p-4 bg-red-500/10 rounded-full">
+                        <AlertTriangle className="size-8 text-red-500" />
+                    </div>
+                    <p className="text-sm text-gray-400 mt-2">Message not found</p>
                 </div>
             </div>
         )
@@ -180,12 +188,14 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
 
 
     return(
-        <div className="h-full flex flex-col">
-            <div className=" h-[49px] flex justify-between items-center px-4 border-b">
-                <p className="text-g font-bold">Thread</p>
-                <Button onClick={onClose} size="iconSm" variant="ghost">
-                    <XIcon className="size-5 stroke-[1.5]"/>
-
+        <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+            <div className="h-[49px] flex justify-between items-center px-4 border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                    <MessageSquare className="size-5 text-purple-500" />
+                    <p className="text-lg font-bold text-white">Thread</p>
+                </div>
+                <Button onClick={onClose} size="icon-Sm" variant="ghost" className="hover:bg-gray-700">
+                    <XIcon className="size-5 stroke-[1.5] text-gray-400"/>
                 </Button>
             </div>
             
@@ -194,8 +204,8 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
 
                             <div key={datekey}>
                                 <div className="text-center my-2 relative">
-                                    <hr  className="absolute top-1/2 left-0 right-0 border-t border-gray-300"/>
-                                    <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border-gray-300 shadow-sm ">
+                                    <hr  className="absolute top-1/2 left-0 right-0 border-t border-gray-700"/>
+                                    <span className="relative inline-block bg-gray-800 px-4 py-1 rounded-full text-xs border border-gray-700 shadow-sm text-gray-400">
                                         {formatDateLabel(datekey)}
                                     </span>
                                     </div>
@@ -255,9 +265,9 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
                         }}/>
                         {isLoadingMore && (
                     <div className="text-center my-2 relative">
-                        <hr  className="absolute top-1/2 left-0 right-0 border-t border-gray-300"/>
-                        <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border-gray-300 shadow-sm ">
-                            <Loader className="size-4 animate-spin"/>
+                        <hr  className="absolute top-1/2 left-0 right-0 border-t border-gray-700"/>
+                        <span className="relative inline-block bg-gray-800 px-4 py-1 rounded-full text-xs border border-gray-700 shadow-sm">
+                            <Loader className="size-4 animate-spin text-purple-500"/>
                         </span>
                         </div>
                 )}
@@ -279,7 +289,7 @@ export const Thread =({messageId, onClose}:ThreadProps)=>{
                 />
             </div>
 
-            <div className="px-4">
+            <div className="px-4 pb-4 bg-gray-900/50">
                 <Editor
                  key={editorKey}
                  onSubmit={handleSubmit}

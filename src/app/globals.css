@@ -157,7 +157,7 @@ body{
 .ql-editor{
 line-height:22px !important;
 padding:8px 12px !important;
-color: #1d1c1d !important;
+color: #ffffff !important; /* YOUR TEXT COLOR */
 font-weight:400 !important;
 font-family:"Lato", sans-serif !important;
 font-size:14px !important;
@@ -173,6 +173,14 @@ font-size:14px !important;
 
 .ql-renderer{
   padding:0 !important;
+}
+.ql-renderer.ql-editor:before {
+  content: none !important;
+}
+
+.ql-renderer {
+  background: transparent !important;
+  color: #ffffff !important; /* YOUR TEXT COLOR */
 }
 
 .ql-editor:before{

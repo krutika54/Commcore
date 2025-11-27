@@ -85,7 +85,7 @@ const Editor = ({
                             handler:()=>{
                                 const text = quill.getText();
                                 const addedImage = imageElementRef.current?.files?.[0] || null;
-                                const isEmpty = !addedImage && text.replace(/<(.|\n)*?>/g,"").trim().length
+                                const isEmpty = !addedImage && text.replace(/<(.|\n)*?>/g,"").trim().length === 0;
 
                                  if(isEmpty) return;
 
@@ -169,20 +169,20 @@ const Editor = ({
         onChange={(event)=>setImage(event.target.files![0])}
         className="hidden"
         />
-            <div className={cn("flex flex-col border border-slate-200 rounded-md overflow-hidden focus-within:border-slate-300 focus-within:shadow-sm transition bg-white",
+            <div className={cn("flex flex-col border border-gray-700 rounded-lg overflow-hidden focus-within:border-purple-500 focus-within:shadow-lg focus-within:shadow-purple-500/20 transition bg-gray-800/50 backdrop-blur-sm",
                 disabled && "opacity-50"
             )}>
                 <div ref={containerRef} className="h-full ql-custom"/>
                 {!!image &&(
                     <div className="p-2">
-                        <div className="relative size-[62px] flex items-center justify-center group/image">
+                        <div className="relative size-[62px] flex items-center justify-center group/image rounded-lg overflow-hidden border border-gray-700">
                         <Hint label="Remove image">
                         <button
                         onClick={()=>{
                             setImage(null);
                             imageElementRef.current!.value="";
                         }}
-                        className="hidden group-hover/image:flex rounded-full bg-black absolute -top-2.5 -right-2.5 text-white size-6 z-[4] border-2 border-white items-center justify-center"
+                        className="hidden group-hover/image:flex rounded-full bg-red-500 hover:bg-red-600 absolute -top-2.5 -right-2.5 text-white size-6 z-[4] border-2 border-gray-800 items-center justify-center transition-all"
                         >
                            <XIcon className="size-3.5"/>
                         </button>
@@ -191,6 +191,7 @@ const Editor = ({
                         src={URL.createObjectURL(image)}
                         alt="Uploaded"
                         fill
+                        className="object-cover"
                         />
                         </div>
                     </div>
@@ -200,9 +201,10 @@ const Editor = ({
                     <Hint label={isToolbarVisible? "Hide formatting":"Show formatting"}>
                     <Button
                     disabled={disabled}
-                    size="iconSm"
+                    size="icon-Sm"
                     variant="ghost"
-                    onClick={toggleToolbar}>
+                    onClick={toggleToolbar}
+                    className="hover:bg-gray-700 text-gray-400 hover:text-white">
                         <PiTextAa className="size-4"/>
                     </Button>
                     </Hint>
@@ -211,8 +213,9 @@ const Editor = ({
                    <EmojiPropover onEmojiSelect={onEmojiSelect}>
                     <Button
                     disabled={disabled}
-                    size="iconSm"
+                    size="icon-Sm"
                     variant="ghost"
+                    className="hover:bg-gray-700 text-gray-400 hover:text-white"
                     >
                         <Smile className="size-4"/>
                     </Button>
@@ -224,21 +227,23 @@ const Editor = ({
                         <Hint label="Image">
                       <Button
                         disabled={disabled}
-                        size="iconSm"
+                        size="icon-Sm"
                         variant="ghost"
                         onClick={()=>imageElementRef.current?.click()}
+                        className="hover:bg-gray-700 text-gray-400 hover:text-white"
                         >
                         <ImageIcon className="size-4"/>
                     </Button>
                     </Hint>)}
 
                  {variant ==="update" && (
-                    <div className="ml-auto flex items-enter gap-x-2">
+                    <div className="ml-auto flex items-center gap-x-2">
                         <Button
                         variant="outline"
                         size="sm"
                         onClick={onCancel}
-                        disabled={disabled}>
+                        disabled={disabled}
+                        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white">
                             Cancel
                         </Button>
 
@@ -251,7 +256,7 @@ const Editor = ({
                             })
                         }}
                         size="sm"
-                        className="bg-[#007a5a] hover:bg-[#007a5a]/80 text-white">
+                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20 transition-all duration-200 hover:scale-105">
                             Save
                         </Button>
                         </div>
@@ -266,13 +271,12 @@ const Editor = ({
                         image,
                     })
                    }}
-                   size="iconSm"
+                   size="icon-Sm"
                    className={cn(
-                    "ml-auto",
+                    "ml-auto transition-all duration-200",
                     isEmpty
-
-                    ? "bg-white hover:bg-white text-muted-foreground"
-                    : "bg-[#007a5a] hover:bg-[#007a5a]/80 text-white"
+                    ? "bg-gray-800 hover:bg-gray-700 text-gray-500"
+                    : "bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20 hover:scale-105"
                     )}>
                     <MdSend className="size-4"/>
                    </Button>)}
@@ -280,11 +284,11 @@ const Editor = ({
                 </div>
             </div>
                      {variant === "create"&& (
-            <div className={cn("p-2 text-[10px] text-muted-foreground flex justify-end opacity-0 transition",
+            <div className={cn("p-2 text-[10px] text-gray-500 flex justify-end opacity-0 transition",
                 !isEmpty &&"opacity-100"
             )}>
                 <p>
-                    <strong>Shift + Return </strong> to add a new line
+                    <strong className="text-gray-400">Shift + Return </strong> to add a new line
                 </p>
             </div>
                     )}      </div>

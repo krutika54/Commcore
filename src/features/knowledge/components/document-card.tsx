@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Trash2, Eye } from "lucide-react";
+import { FileText, Download, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDeleteDocument } from "../api/use-delete-document";
 import { toast } from "sonner";
@@ -27,69 +27,122 @@ export const DocumentCard = ({ document }: DocumentCardProps) => {
       deleteDoc(
         { docId: document._id },
         {
-          onSuccess: () => {
-            toast.success("Document deleted successfully");
-          },
-          onError: () => {
-            toast.error("Failed to delete document");
-          },
+          onSuccess: () => toast.success("Document deleted successfully"),
+          onError: () => toast.error("Failed to delete document"),
         }
       );
     }
   };
 
   const handleDownload = () => {
-    if (document.url) {
-      window.open(document.url, "_blank");
-    }
+    if (document.url) window.open(document.url, "_blank");
   };
 
   return (
-    <Card className="hover:shadow-md transition-all">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <FileText className="size-6 text-blue-600" />
+    <Card
+      className="
+        group relative transition-all duration-300
+        border border-white/10
+        bg-gradient-to-br from-black via-gray-900 to-black
+        backdrop-blur-lg
+        hover:shadow-[0_0_25px_-5px_rgba(56,189,248,0.5)]
+        rounded-xl overflow-hidden
+      "
+    >
+      <div
+        className="
+          absolute inset-0 opacity-0 group-hover:opacity-100
+          bg-gradient-to-r from-purple-600/10 via-blue-600/10 to-cyan-600/10
+          transition-opacity duration-500
+        "
+      />
+
+      <CardContent className="p-5 relative z-10">
+        <div className="flex items-start gap-4">
+          {/* Icon */}
+          <div
+            className="
+              p-3 rounded-lg
+              bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-cyan-500/20
+              text-cyan-300
+              group-hover:from-purple-500/30 group-hover:to-cyan-500/30
+              transition-all duration-300
+            "
+          >
+            <FileText className="size-6" />
           </div>
+
+          {/* Content */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{document.name}</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <h4
+              className="
+                font-semibold text-sm truncate 
+                bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 
+                bg-clip-text text-transparent
+              "
+            >
+              {document.name}
+            </h4>
+            <p className="text-xs text-gray-400 mt-0.5">
               {formatFileSize(document.fileSize)} • {document.fileType}
             </p>
+
             {document.description && (
-              <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+              <p className="text-xs text-gray-500 mt-2 line-clamp-2 leading-relaxed">
                 {document.description}
               </p>
             )}
-            {document.tags && document.tags.length > 0 && (
+
+            {document.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {document.tags.map((tag: string, index: number) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
+                {document.tags.map((tag: string, i: number) => (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="
+                      text-[10px] px-2 py-0.5 
+                      bg-gradient-to-r from-purple-600/20 via-blue-600/20 to-cyan-600/20
+                      text-cyan-300 border border-white/10
+                      hover:from-purple-600/30 hover:to-cyan-600/30
+                      transition-all duration-300
+                    "
+                  >
                     {tag}
                   </Badge>
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-              {document.uploader && (
-                <div className="flex items-center gap-1.5 flex-1">
-                  <Avatar className="size-5">
-                    <AvatarImage src={document.uploader.user?.image} />
-                    <AvatarFallback className="text-xs">
-                      {document.uploader.user?.name?.charAt(0)?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(document.createdAt), "MMM dd")}
-                  </span>
-                </div>
-              )}
+
+            {/* Footer */}
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                {document.uploader && (
+                  <>
+                    <Avatar className="size-6 border border-white/20">
+                      <AvatarImage src={document.uploader.user?.image} />
+                      <AvatarFallback className="text-[10px] text-gray-300 bg-gray-800">
+                        {document.uploader.user?.name?.charAt(0)?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-gray-400">
+                      {format(new Date(document.createdAt), "MMM dd")}
+                    </span>
+                  </>
+                )}
+              </div>
+
               <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleDownload}
-                  className="h-7 w-7 p-0"
+                  className="
+                    h-7 w-7 p-0 
+                    text-cyan-300 
+                    hover:text-white 
+                    hover:bg-cyan-600/20 
+                    transition-all duration-300
+                  "
                 >
                   <Download className="size-3.5" />
                 </Button>
@@ -98,7 +151,13 @@ export const DocumentCard = ({ document }: DocumentCardProps) => {
                   size="sm"
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                  className="
+                    h-7 w-7 p-0 
+                    text-red-400 
+                    hover:text-red-300 
+                    hover:bg-red-600/20 
+                    transition-all duration-300
+                  "
                 >
                   <Trash2 className="size-3.5" />
                 </Button>

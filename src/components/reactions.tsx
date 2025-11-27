@@ -44,18 +44,19 @@ export const Reactions =({
          label={`${reaction.count} ${reaction.count === 1 ? "person" : "people"} reacted with ${reaction.value}`}>
 
         <button
-          key={reaction._id || reaction.value}   // ✅ Fix key warning
-          onClick={() => onChange(reaction.value)} // ✅ Trigger toggle
-          className={cn("h-6 px-2 rounded-full bg-slate-200/70 border border-transparent text-slate-800 flex items-center gap-x-1",
-            reaction.memberIds.includes(currentMemberId)&&
-            "bg-blue-100/70 border-blue-500 text-blue-500"
+          key={reaction._id || reaction.value}
+          onClick={() => onChange(reaction.value)}
+          className={cn(
+            "h-6 px-2 rounded-full bg-gray-800/50 border border-gray-700 text-gray-300 flex items-center gap-x-1 hover:bg-gray-700/50 transition-all duration-200",
+            reaction.memberIds.includes(currentMemberId) &&
+            "bg-purple-500/20 border-purple-500/50 text-purple-400 hover:bg-purple-500/30"
           )}
         >
           {reaction.value}
           <span 
           className={cn(
-            "text-xs font-semibold text-muted-foreground",
-            reaction.memberIds.includes(currentMemberId)&&"text-blue-500",
+            "text-xs font-semibold text-gray-400",
+            reaction.memberIds.includes(currentMemberId) && "text-purple-400",
           )}>
           {reaction.count}</span>
         </button></Hint>
@@ -63,14 +64,13 @@ export const Reactions =({
 
 
       <EmojiPropover
-      hint ="Add reaction"
+      hint="Add reaction"
       onEmojiSelect={(emoji)=>onChange(emoji)}
       >
-        <button className="h-7 px-3 rounded-full bg-slate-200/70 border-transparent hover:border-slate-500 text-slate-800 flex items-center gap-x-1">
+        <button className="h-7 px-3 rounded-full bg-gray-800/50 border border-gray-700 hover:border-purple-500 hover:bg-gray-700/50 text-gray-400 hover:text-purple-400 flex items-center gap-x-1 transition-all duration-200">
           <MdOutlineAddReaction className="size-4"/>
         </button>
       </EmojiPropover>
     </div>
   );
 };
-

@@ -1,3 +1,4 @@
+
 import {useState} from "react"
 import{
     Dialog,
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Hash } from "lucide-react";
 
 
 export const CreateChannelModal =()=>{
@@ -53,28 +55,63 @@ const handleSubmit = (e: React.FormEvent<HTMLFormElement>) =>{
 }
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent>
+            <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-gray-700">
                 <DialogHeader>
-                    <DialogTitle>
-                        Add a Channel
-                    </DialogTitle>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="p-2 bg-purple-500/10 rounded-lg">
+                            <Hash className="w-5 h-5 text-purple-500" />
+                        </div>
+                        <DialogTitle className="text-xl text-white">
+                            Add a Channel
+                        </DialogTitle>
+                    </div>
+                    <DialogDescription className="text-gray-400">
+                        Create a new channel for your workspace
+                    </DialogDescription>
                 </DialogHeader>
-                <form  onSubmit={handleSubmit} className="space-y-4">
-                    <Input value={name} disabled={isPending} 
-                    onChange={handleChange}
-                    required
-                    autoFocus   
-                    minLength={3}
-                    maxLength={80}
-                    placeholder="e.g. plan-buget" />
-                    <div className="flex justify-end">
-                    <Button  type="submit" disabled={isPending}>
-                        Create
-                    </Button>
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-300">
+                            Channel Name
+                        </label>
+                        <div className="relative">
+                            <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                            <Input 
+                                value={name} 
+                                disabled={isPending} 
+                                onChange={handleChange}
+                                required
+                                autoFocus   
+                                minLength={3}
+                                maxLength={80}
+                                placeholder="e.g. plan-budget" 
+                                className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:border-purple-500 focus:ring-purple-500/20"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Spaces will be replaced with hyphens
+                        </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button  
+                            type="button"
+                            variant="outline"
+                            onClick={handleClose}
+                            disabled={isPending}
+                            className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+                        >
+                            Cancel
+                        </Button>
+                        <Button  
+                            type="submit" 
+                            disabled={isPending}
+                            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/20 transition-all duration-200 hover:scale-105"
+                        >
+                            {isPending ? "Creating..." : "Create Channel"}
+                        </Button>
+                    </div>
                 </form>
-                
             </DialogContent>
         </Dialog>
     );
-};
+}

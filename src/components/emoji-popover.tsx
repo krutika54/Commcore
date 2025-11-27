@@ -1,5 +1,5 @@
 import data from "@emoji-mart/data";
-import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import EmojiPicker, { type EmojiClickData, Theme } from "emoji-picker-react";
 
 
 import{
@@ -56,14 +56,21 @@ export const EmojiPropover=({
                     {children}
                  </TooltipTrigger>
                  </PopoverTrigger>
-                 <TooltipContent className="bg-black text-white border border-whites/5">
+                 <TooltipContent className="bg-gray-900 text-white border border-gray-700 shadow-lg">
                     <p className="font-medium text-xs">{hint}</p>
                  </TooltipContent>
                 
                 </Tooltip>
                   
-                  <PopoverContent className="p-0 w-full border-none shadow-none">
-                    <EmojiPicker onEmojiClick={onSelect} />
+                  <PopoverContent className="p-0 w-full border border-gray-700 shadow-xl bg-gray-800">
+                    <EmojiPicker 
+                      onEmojiClick={onSelect}
+                      theme={Theme.DARK}
+                      searchPlaceHolder="Search emoji..."
+                      previewConfig={{
+                        showPreview: false
+                      }}
+                    />
 
                   </PopoverContent>
 

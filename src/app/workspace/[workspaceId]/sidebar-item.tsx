@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { IconType } from "react-icons/lib";
@@ -7,12 +8,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const sidebarItemVariants = cva(
-  "flex items-center gap-1.5 justify-start font-normal h-7 px-[18px] text-sm overflow-hidden",
+  "flex items-center gap-2 justify-start font-medium text-sm h-9 px-3 rounded-md transition-all duration-200",
   {
     variants: {
       variant: {
-        default: "text-[#f9edffcc]",
-        active: "text-[#481349] bg-white/90 hover:bg-white/90",
+        default:
+          "text-gray-300 hover:text-white hover:bg-white/10 active:scale-[0.98]",
+        active:
+          "bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-md shadow-purple-500/20 hover:bg-purple-500/30",
       },
     },
     defaultVariants: {
@@ -36,31 +39,30 @@ export const SidebarItem = ({
 }: SidebarItemProps) => {
   const workspaceId = useWorkspaceId();
 
-  // Determine the correct href based on the id
+  // Determine navigation path
   let href = `/workspace/${workspaceId}`;
-  
-  // ✅ NEW: Handle new feature routes
-  if (id === "tasks") {
-    href = `/workspace/${workspaceId}/tasks`;
-  } else if (id === "knowledge") {
-    href = `/workspace/${workspaceId}/knowledge`;
-  } else if (id === "rooms") {
-    href = `/workspace/${workspaceId}/rooms`;
-  } else if (id !== "threads" && id !== "drafts") {
-    // Existing channel/member routes
+
+  if (id === "tasks") href = `/workspace/${workspaceId}/tasks`;
+  else if (id === "knowledge") href = `/workspace/${workspaceId}/knowledge`;
+  else if (id === "rooms") href = `/workspace/${workspaceId}/rooms`;
+  else if (id !== "threads" && id !== "drafts")
     href = `/workspace/${workspaceId}/channel/${id}`;
-  }
 
   return (
     <Button
-      variant="transparent"
+      variant="ghost"
       size="sm"
       asChild
-      className={cn(sidebarItemVariants({ variant }))}
+      className={cn(sidebarItemVariants({ variant }), "group w-full")}
     >
       <Link href={href}>
-        <Icon className="size-3.5 mr-1 shrink-0" />
-        <span className="text-sm truncate">{label}</span>
+        <Icon
+          className={cn(
+            "size-4 mr-2 shrink-0 transition-transform duration-200 group-hover:scale-110",
+            variant === "active" ? "text-purple-400" : "text-gray-400"
+          )}
+        />
+        <span className="truncate">{label}</span>
       </Link>
     </Button>
   );

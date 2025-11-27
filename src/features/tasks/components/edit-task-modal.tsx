@@ -83,13 +83,37 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit Task</DialogTitle>
+      <DialogContent
+        className="
+          max-w-lg 
+          bg-gradient-to-br from-black via-gray-900 to-black
+          backdrop-blur-xl
+          border border-white/10
+          text-white
+          rounded-2xl
+          shadow-[0_0_40px_-10px_rgba(147,51,234,0.4)]
+          transition-all duration-300
+          hover:shadow-[0_0_50px_-5px_rgba(56,189,248,0.5)]
+        "
+      >
+        <DialogHeader className="text-center">
+          <DialogTitle
+            className="
+              text-3xl font-extrabold 
+              bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 
+              bg-clip-text text-transparent 
+              tracking-wide drop-shadow-lg
+            "
+          >
+            Edit Task
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+
+        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Task Title *</Label>
+            <Label htmlFor="title" className="text-gray-300">
+              Task Title *
+            </Label>
             <Input
               id="title"
               value={title}
@@ -97,11 +121,19 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
               placeholder="Enter task title"
               disabled={isPending}
               required
+              className="
+                bg-white/5 border border-white/10 
+                text-white placeholder:text-gray-500
+                focus:border-cyan-400 focus:ring-cyan-400
+                transition-all duration-300
+              "
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="text-gray-300">
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -109,12 +141,20 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
               placeholder="Task details..."
               rows={3}
               disabled={isPending}
+              className="
+                bg-white/5 border border-white/10 
+                text-white placeholder:text-gray-500
+                focus:border-purple-400 focus:ring-purple-400
+                transition-all duration-300
+              "
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority *</Label>
+              <Label htmlFor="priority" className="text-gray-300">
+                Priority *
+              </Label>
               <Select
                 value={priority}
                 onValueChange={(value: "low" | "medium" | "high") =>
@@ -122,10 +162,17 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
                 }
                 disabled={isPending}
               >
-                <SelectTrigger id="priority">
-                  <SelectValue />
+                <SelectTrigger
+                  id="priority"
+                  className="
+                    bg-white/5 border border-white/10 
+                    text-white focus:border-blue-400 focus:ring-blue-400
+                    transition-all duration-300
+                  "
+                >
+                  <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-gray-900 border border-white/10 text-white">
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -134,28 +181,44 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="dueDate" className="text-gray-300">
+                Due Date
+              </Label>
               <Input
                 id="dueDate"
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 disabled={isPending}
+                className="
+                  bg-white/5 border border-white/10 
+                  text-white focus:border-cyan-400 focus:ring-cyan-400
+                  transition-all duration-300
+                "
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="assignedTo">Assign To</Label>
+            <Label htmlFor="assignedTo" className="text-gray-300">
+              Assign To
+            </Label>
             <Select
               value={assignedTo}
               onValueChange={setAssignedTo}
               disabled={isPending}
             >
-              <SelectTrigger id="assignedTo">
+              <SelectTrigger
+                id="assignedTo"
+                className="
+                  bg-white/5 border border-white/10 
+                  text-white focus:border-purple-400 focus:ring-purple-400
+                  transition-all duration-300
+                "
+              >
                 <SelectValue placeholder="Select member (optional)" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-900 border border-white/10 text-white">
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {members?.map((member) => (
                   <SelectItem key={member._id} value={member._id}>
@@ -172,10 +235,24 @@ export const EditTaskModal = ({ task, open, onOpenChange }: EditTaskModalProps) 
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
+              className="
+                border border-purple-500/50 text-purple-300
+                hover:bg-purple-600/20 hover:text-white
+                transition-all duration-300
+              "
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="
+                bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 
+                text-white font-semibold
+                hover:shadow-[0_0_20px_rgba(56,189,248,0.6)]
+                transition-all duration-300
+              "
+            >
               {isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>

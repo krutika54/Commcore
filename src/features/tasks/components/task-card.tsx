@@ -24,9 +24,10 @@ interface TaskCardProps {
 }
 
 const PRIORITY_COLORS = {
-  low: "bg-green-500/10 text-green-700 border-green-200",
-  medium: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  high: "bg-red-500/10 text-red-700 border-red-200",
+  low: "bg-green-500/10 text-green-400 border border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+  medium:
+    "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+  high: "bg-red-500/10 text-red-400 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.25)]",
 };
 
 const STATUS_OPTIONS = [
@@ -45,7 +46,11 @@ export const TaskCard = ({ task }: TaskCardProps) => {
     updateStatus(
       {
         taskId: task._id,
-        status: newStatus as "not_started" | "in_progress" | "completed" | "delayed",
+        status: newStatus as
+          | "not_started"
+          | "in_progress"
+          | "completed"
+          | "delayed",
       },
       {
         onSuccess: () => {
@@ -67,80 +72,100 @@ export const TaskCard = ({ task }: TaskCardProps) => {
   };
 
   return (
-    <Card className="hover:shadow-md transition-all">
-      <CardHeader className="p-3 pb-2">
+    <Card
+      className={cn(
+        "group relative transition-all border border-white/10 bg-gradient-to-br from-[#0e0e10] via-[#141218] to-[#1a1325]",
+        "hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:border-purple-500/40 hover:scale-[1.02]",
+        "backdrop-blur-xl rounded-xl overflow-hidden"
+      )}
+    >
+      {/* subtle glow ring */}
+      <div className="absolute inset-0 opacity-10 group-hover:opacity-20 bg-gradient-to-tr from-purple-500 via-violet-600 to-cyan-500 blur-3xl transition-opacity"></div>
+
+      <CardHeader className="relative p-4 pb-2">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="font-medium text-sm line-clamp-2 flex-1">
+          <h4 className="font-semibold text-sm text-white tracking-wide leading-snug flex-1">
             {task.title}
           </h4>
           <Badge
             variant="outline"
-            className={cn("text-xs", PRIORITY_COLORS[task.priority])}
+            className={cn(
+              "text-xs font-medium capitalize backdrop-blur-md",
+              PRIORITY_COLORS[task.priority as keyof typeof PRIORITY_COLORS]
+            )}
           >
             {task.priority}
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="p-3 pt-0 space-y-2">
+
+      <CardContent className="relative p-4 pt-0 space-y-3">
         {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
+          <p className="text-xs text-gray-400 line-clamp-2">
             {task.description}
           </p>
         )}
 
         {/* STATUS DROPDOWN */}
-        <Select
-          value={task.status}
-          onValueChange={handleStatusChange}
-          disabled={isPending}
-        >
-          <SelectTrigger className="h-7 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="pt-2">
+          <Select
+            value={task.status}
+            onValueChange={handleStatusChange}
+            disabled={isPending}
+          >
+            <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-gray-200 hover:border-purple-400/40 focus:ring-purple-500">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1b1522]/95 backdrop-blur-md text-gray-200 border border-purple-500/30 shadow-lg">
+              {STATUS_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="hover:bg-purple-500/20 focus:bg-purple-500/30"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
+        {/* Due date */}
         {task.dueDate && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3" />
+          <div className="flex items-center gap-1.5 text-xs text-gray-400 pt-1">
+            <Calendar className="size-3 text-purple-400" />
             <span>{format(new Date(task.dueDate), "MMM dd, yyyy")}</span>
           </div>
         )}
 
-        {/* ASSIGNEE DISPLAY */}
+        {/* Assignee */}
         {task.assignee ? (
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <Avatar className="size-5">
+          <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+            <Avatar className="size-5 ring-1 ring-purple-500/40">
               <AvatarImage src={task.assignee.user?.image} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-xs text-gray-300 bg-purple-500/10">
                 {task.assignee.user?.name?.charAt(0)?.toUpperCase() || "?"}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-xs text-gray-300 truncate">
               {task.assignee.user?.name || "Unassigned"}
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 pt-2 border-t text-muted-foreground">
-            <User className="size-4" />
+          <div className="flex items-center gap-2 pt-2 border-t border-white/10 text-gray-400">
+            <User className="size-4 text-purple-400" />
             <span className="text-xs">Unassigned</span>
           </div>
         )}
 
-        {/* OPEN TASK BUTTON */}
+        {/* Open Task Button */}
         <Button
           onClick={handleOpenTask}
           variant="outline"
           size="sm"
-          className="w-full mt-2"
+          className="w-full mt-2 border-purple-500/40 text-purple-300 hover:bg-purple-500/20 hover:text-purple-100 transition-colors"
         >
-          <MessageSquare className="size-4 mr-2" />
+          <MessageSquare className="size-4 mr-2 text-purple-300" />
           Open Task Room
         </Button>
       </CardContent>

@@ -1,4 +1,3 @@
-
 import { useCreateMessage } from "@/features/messages/api/use-create-messages";
 import { useGenerateUploadUrl } from "@/features/upload/api/use-generate-upload-url";
 import { useChannelId } from "@/hooks/use-channel-id";
@@ -88,15 +87,16 @@ export const ChatInput = ({placeholder}:ChatInputProps) =>{
 
 
     return(
-        <div className="px-5 w-full">
-            <Editor 
-            key={editorKey}
-            placeholder={placeholder}
-            onSubmit={handleSubmit}
-            disabled={isPending}
-            innerRef={editorRef}
-            
-            />
+        <div className="px-5 w-full pb-4 bg-gradient-to-t from-gray-900/50 to-transparent">
+            <div className="bg-gray-800/50 rounded-lg border border-gray-700 shadow-lg">
+                <Editor 
+                key={editorKey}
+                placeholder={placeholder}
+                onSubmit={handleSubmit}
+                disabled={isPending}
+                innerRef={editorRef}
+                />
+            </div>
         </div>
     );
-}; 
+};

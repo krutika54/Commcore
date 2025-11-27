@@ -1,97 +1,121 @@
+"use client";
+
 import { Info, Search } from "lucide-react";
-import Link from "next/link"
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useGetChannels } from "@/features/channels/api/use-get-channels";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-
-import { Button } from "@/components/ui/button";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
-
 import {
-    Command,
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-    CommandShortcut,
-} from "@/components/ui/command"
-import { useRouter } from "next/navigation";
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Button } from "@/components/ui/button";
 
+export const Toolbar = () => {
+  const workspaceId = useWorkspaceId();
+  const router = useRouter();
 
+  const { data } = useGetWorkspace({ id: workspaceId });
+  const { data: channels } = useGetChannels({ workspaceId });
+  const { data: members } = useGetMembers({ workspaceId });
 
-export const Toolbar=() =>{
-    const workspaceId = useWorkspaceId();
-    const router = useRouter();
+  const [open, setOpen] = useState(false);
 
-    const {data}= useGetWorkspace({id:workspaceId});
-    const {data:channels} = useGetChannels({workspaceId})
-    const {data:members} = useGetMembers({workspaceId})
+  const onChannelClick = (channelId: string) => {
+    setOpen(false);
+    router.push(`/workspace/${workspaceId}/channel/${channelId}`);
+  };
 
-    const [open, setOpen] = useState(false);
+  const onMemberClick = (memberId: string) => {
+    setOpen(false);
+    router.push(`/workspace/${workspaceId}/member/${memberId}`);
+  };
 
-    const onChannelClick = (channelId:string) =>{
-        setOpen(false);
+  return (
+    <nav
+      className="
+        flex items-center justify-between 
+        h-10 px-2
+        bg-gradient-to-r from-[#0a0a0a] via-[#0d0d0d] to-[#111111]
+        border-b border-white/10
+        shadow-[0_1px_0_rgba(255,255,255,0.05)]
+        backdrop-blur-sm
+      "
+    >
+      {/* Left Spacer */}
+      <div className="flex-1" />
 
-        router.push(`/workspace/${workspaceId}/channel/${channelId}`);
-    }
+      {/* Center: Search */}
+      <div className="min-w-[280px] max-w-[480px] flex-1 flex justify-center">
+        <Button
+          onClick={() => setOpen(true)}
+          size="sm"
+          className="
+            w-full h-7 px-2 
+            justify-start
+            bg-[#1a1a1a] hover:bg-[#222] 
+            border border-white/10 
+            text-white text-xs font-medium
+            transition-all duration-150
+          "
+        >
+          <Search className="size-4 text-white/80 mr-2" />
+          <span className="truncate text-white/90">
+            Search {data?.name || "workspace"}
+          </span>
+        </Button>
 
-    const onMemberClick = (memberId:string) =>{
-        setOpen(false);
+        <CommandDialog open={open} onOpenChange={setOpen}>
+          <CommandInput placeholder="Type a command or search..." />
+          <CommandList>
+            <CommandEmpty>No results found.</CommandEmpty>
 
-        router.push(`/workspace/${workspaceId}/member/${memberId}`);
-    }
-
-    return(
-      <nav className="bg-[#0a0a0a] flex items-center justify-between h-10 p-1.5">
-        <div className="flex-1"/>
-        <div className="min-w-[280px] max-[642px] grow-[2] shrink">
-            <Button onClick={()=>setOpen(true)} size="sm" className="bg-accent/25 hover:bg-accent-25 w-full justify-start h-7 px-2">
-
-            <Search className="size-4 text-white mr-2"/>
-            <span className="text-white text-xs">
-                Search {data?.name}
-            </span>
-            </Button>
-
-                <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-
-          <CommandGroup heading="Channels">
-            {channels?.map((channel)=>(
-                <CommandItem onSelect={()=> onChannelClick(channel._id)}>
-                    {channel.name}
+            <CommandGroup heading="Channels">
+              {channels?.map((channel) => (
+                <CommandItem
+                  key={channel._id}
+                  onSelect={() => onChannelClick(channel._id)}
+                >
+                  {channel.name}
                 </CommandItem>
-            ))}
-          </CommandGroup>
+              ))}
+            </CommandGroup>
 
-          <CommandSeparator />
-          <CommandGroup heading="Members">
+            <CommandSeparator />
 
-            {members?.map((member)=>(
-
-                <CommandItem onSelect={()=>onMemberClick(member._id)}>
-                    {member.user.name}
+            <CommandGroup heading="Members">
+              {members?.map((member) => (
+                <CommandItem
+                  key={member._id}
+                  onSelect={() => onMemberClick(member._id)}
+                >
+                  {member.user.name}
                 </CommandItem>
-            ))}
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
+      </div>
 
-          </CommandGroup>
-        </CommandList>
-      </CommandDialog>
-
-        </div>
-        <div className="ml-auto flex-1 flex items-center justify-end">
-            <Button variant ="transparent" size="iconSm">
-                <Info className="size-5 text-white"/>
-            </Button>
-        </div>
-      Toolbar</nav>
-    );
+      {/* Right Section: Info */}
+      <div className="flex-1 flex justify-end items-center">
+        <Button
+          variant="ghost"
+          size="icon-Sm"
+          className="hover:bg-white/10 transition-colors"
+        >
+          <Info className="size-5 text-white" />
+        </Button>
+      </div>
+    </nav>
+  );
 };

@@ -9,80 +9,71 @@ import { useRouter } from "next/navigation";
 import { Loader, TriangleAlert } from "lucide-react";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
 
+const WorkspaceIdPage = () => {
+  const router = useRouter();
+  const workspaceId = useWorkspaceId();
+  const [open, setOpen] = useCreateChannelModal();
 
+  const { data: member, isLoading: memberLoading } = useCurrentMember({ workspaceId });
+  const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({ id: workspaceId });
+  const { data: channels, isLoading: channelsLoading } = useGetChannels({ workspaceId });
 
-const WorkspaceIdPage = () =>{
-    
-    const router = useRouter();
-    const workspaceId = useWorkspaceId();
-    const [open, setOpen] = useCreateChannelModal();
+  const channelId = useMemo(() => channels?.[0]?._id, [channels]);
+  const isAdmin = useMemo(() => member?.role === "admin", [member?.role]);
 
-    const {data: member, isLoading: memberLoading} = useCurrentMember({workspaceId});
-    const { data:workspace, isLoading:workspaceLoading } = useGetWorkspace({id:workspaceId});
-    const {data: channels, isLoading:channelsLoading } = useGetChannels({workspaceId,
+  useEffect(() => {
+    if (workspaceLoading || channelsLoading || memberLoading || !member || !workspace) return;
 
-    });
-
-    const channelId = useMemo(()=> channels?.[0]?._id, [channels]);
-    const isAdmin = useMemo(()=>member?.role === "admin", [member?.role]);
-
-    useEffect(()=>{
-
-        if(workspaceLoading||channelsLoading|| memberLoading || !member|| !workspace) return;
-
-        if(channelId){
-            router.push(`/workspace/${workspaceId}/channel/${channelId}`);
-        }
-        else if(!open && isAdmin){
-            setOpen(true);
-        }
-
-    }, [
-        member,
-        memberLoading,
-        isAdmin,
-        channelId,
-        workspaceLoading,
-        channelsLoading,
-        workspace,
-        open,
-        setOpen,
-        router,
-        workspaceId,
-    ]);
-
-    if(workspaceLoading || channelsLoading || memberLoading){
-        return(
-            <div className="h-full flex-1 flex items-center justify-center flex-col gap-2">
-                <Loader className="size-6 animate-spin text-muted-foreground"/>
-            </div>
-        )
-
+    if (channelId) {
+      router.push(`/workspace/${workspaceId}/channel/${channelId}`);
+    } else if (!open && isAdmin) {
+      setOpen(true);
     }
-    if(!workspace || !member){
-        return(
-            <div className="h-full flex-1 flex items-center justify-center flex-col gap-2">
-                <TriangleAlert className="size-6  text-muted-foreground"/>
-                <span className="text-sm text-muted-foreground">
-                    Workspace not found
-                </span>
-            </div>
-        );
+  }, [
+    member,
+    memberLoading,
+    isAdmin,
+    channelId,
+    workspaceLoading,
+    channelsLoading,
+    workspace,
+    open,
+    setOpen,
+    router,
+    workspaceId,
+  ]);
 
-    }
+  // Unified Loader UI
+  if (workspaceLoading || channelsLoading || memberLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-[#0d0d0d] text-gray-300">
+        <Loader className="size-8 animate-spin text-purple-400 mb-3" />
+        <p className="text-sm text-gray-400">Loading workspace...</p>
+      </div>
+    );
+  }
 
-    return(
-            <div className="h-full flex-1 flex items-center justify-center flex-col gap-2">
-                <TriangleAlert className="size-6  text-muted-foreground"/>
-                <span className="text-sm text-muted-foreground">
-                    No Channel found
-                </span>
-            </div>
-        );
+  // Not Found UI
+  if (!workspace || !member) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-[#0d0d0d] text-gray-300">
+        <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-lg px-6 py-10 flex flex-col items-center shadow-lg">
+          <TriangleAlert className="size-8 text-yellow-500 mb-3" />
+          <span className="text-sm text-gray-400">Workspace not found</span>
+        </div>
+      </div>
+    );
+  }
 
-
-
-    
+  // No Channel UI
+  return (
+    <div className="h-full flex flex-col items-center justify-center bg-[#0d0d0d] text-gray-300">
+      <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-lg px-6 py-10 flex flex-col items-center shadow-lg">
+        <TriangleAlert className="size-8 text-purple-400 mb-3" />
+        <span className="text-sm text-gray-400">No channel found</span>
+      </div>
+    </div>
+  );
 };
 
 export default WorkspaceIdPage;

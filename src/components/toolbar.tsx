@@ -1,6 +1,5 @@
-import { isPageStatic } from "next/dist/build/utils";
 import { Button } from "./ui/button";
-import{Hint} from "./hint";
+import { Hint } from "./hint";
 import { MessageSquareTextIcon, Pencil, Smile, Trash } from "lucide-react";
 import { EmojiPropover } from "./emoji-popover";
 
@@ -28,17 +27,17 @@ interface ToolbarProps{
 }: ToolbarProps) =>{
     return(
         <div className="absolute top-0 right-5">
-            <div className="group-hover:opacity-100 opacity-0 transition-opacity border bg-white rounded-md shadow-sm">
+            <div className="group-hover:opacity-100 opacity-0 transition-opacity border border-gray-700 bg-gray-800 rounded-md shadow-lg backdrop-blur-sm">
               <EmojiPropover
-              hint="Add  reaction"
+              hint="Add reaction"
               onEmojiSelect={(emoji) =>handleReaction(emoji)}>
                 
                  <Button
                 variant="ghost"
-                size="iconSm"
+                size="icon-Sm"
                 disabled={isPending}
+                className="text-gray-400 hover:text-purple-400 hover:bg-gray-700"
                 >
-
                 <Smile className="size-4" />
                 </Button>
                 </EmojiPropover>
@@ -47,9 +46,10 @@ interface ToolbarProps{
                 <Hint label="Reply in thread">
                     <Button
                     variant="ghost"
-                    size="iconSm"
+                    size="icon-Sm"
                     disabled={isPending}
-                    onClick={handleThread}>
+                    onClick={handleThread}
+                    className="text-gray-400 hover:text-purple-400 hover:bg-gray-700">
                     <MessageSquareTextIcon className="size-4" />
                     </Button>
                 </Hint>
@@ -59,9 +59,10 @@ interface ToolbarProps{
                  <Hint label="Edit message">
                     <Button
                 variant="ghost"
-                size="iconSm"
+                size="icon-Sm"
                 disabled={isPending}
                 onClick={handleEdit}
+                className="text-gray-400 hover:text-blue-400 hover:bg-gray-700"
                 >
                 <Pencil className="size-4" />
                 </Button>
@@ -71,9 +72,10 @@ interface ToolbarProps{
                  <Hint label="Delete message">
                 <Button
                 variant="ghost"
-                size="iconSm"
+                size="icon-Sm"
                 disabled={isPending}
-                onClick={handleDelete}>
+                onClick={handleDelete}
+                className="text-gray-400 hover:text-red-400 hover:bg-gray-700">
                 <Trash className="size-4" />
                 </Button>
                  </Hint> )}
@@ -82,4 +84,3 @@ interface ToolbarProps{
         </div>
     )
 };
-
