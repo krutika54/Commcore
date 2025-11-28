@@ -53,7 +53,7 @@ export const SidebarItem = ({
 
   return (
     <Button
-      variant="transparent"
+      
       size="sm"
       asChild
       className={cn(sidebarItemVariants({ variant }))}

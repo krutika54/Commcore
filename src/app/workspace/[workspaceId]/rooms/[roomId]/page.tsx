@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { RoomChat } from "@/features/rooms/components/room-chat";
 import { RoomHeader } from "@/features/rooms/components/room-header";
-import { Id } from "../../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 const RoomPage = () => {
   const params = useParams();

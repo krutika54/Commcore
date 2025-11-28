@@ -17,7 +17,6 @@ export const SidebarButton =({
     return (
         <div className="flex flex-col items-center justify-center gap-y-0.5 cursor-pointer group">
             <Button
-  variant="transparent"
   className={cn(
     "size-9 p-2 group-hover:bg-accent/20 z-10", // <- optional z-10 to layer above background
     isActive && "bg-accent/20"
