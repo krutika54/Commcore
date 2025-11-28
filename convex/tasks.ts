@@ -28,6 +28,23 @@ export const getWorkspaceMembers = query({
   },
 });
 
+export const getByWorkspace = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_workspace_id_is_archived", (q) =>
+        q.eq("workspaceId", args.workspaceId).eq("isArchived", false)
+      )
+      .collect();
+
+    return tasks;
+  },
+});
+
 // Get active tasks (not archived)
 export const getActiveTasks = query({
   args: { 
